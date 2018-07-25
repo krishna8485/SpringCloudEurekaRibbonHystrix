@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -49,8 +51,10 @@ public class AddressRestController {
 	@PostMapping("/address")
 	 @ApiOperation(value="Address", response=AddressResult.class )
 	   @ApiResponses(value={
-			   				@ApiResponse(code =200, message=" Retrived successfully")
+			   				@ApiResponse(code =200, message=" Retrived successfully"),
+			   				@ApiResponse(code =503, message=" Service Unavailable")
 	   })
+	@HystrixCommand(fallbackMethod = "getDataFallBack")
 	public ResponseEntity<AddressResult> addAddress(@RequestBody Address address) throws RestClientException, URISyntaxException{
 	
 		ResponseEntity<ZipResponse> exchange =
@@ -63,5 +67,13 @@ public class AddressRestController {
 		
 		return new ResponseEntity<AddressResult>(result, HttpStatus.OK);
 	}
+	
+	public  ResponseEntity<AddressResult> getDataFallBack(@RequestBody Address address) {
+			
+		AddressResult result = new AddressResult();
+		result.setValidZip(false);
+		return new ResponseEntity<AddressResult>(result, HttpStatus.SERVICE_UNAVAILABLE);
+			
+		}
 	
 }
